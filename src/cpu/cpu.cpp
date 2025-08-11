@@ -4,7 +4,7 @@
 CPU::CPU() {}
 
 void CPU::reset() {
-    programCounter = 0;
+    programCounter.reset();
 }
 
 int main(){
