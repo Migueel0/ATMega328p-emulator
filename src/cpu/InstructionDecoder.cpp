@@ -21,6 +21,8 @@ struct InstructionPattern {
     std::function<Instruction(uint16_t, RegisterFile*, ALU*, StatusRegister&,ProgramCounter*)> decoder;
 };
 
+
+//TODO: Check patterns and masks
 std::array<InstructionPattern, 131> instructionTable = {{
     {0xFC00, 0x0C00, ADD},
     {0xFC00, 0x1C00, ADC},
@@ -30,7 +32,8 @@ std::array<InstructionPattern, 131> instructionTable = {{
     {0xF000, 0x4000, SBCI},
     {0xFC00, 0x2000, AND},
     {0xFC00, 0x2200, OR},
-    {0xF000, 0x7000, ANDI}
+    {0xF000, 0x7000, ANDI},
+    {0xF000, 0x6000, ORI},
 
 }};
 
@@ -46,6 +49,8 @@ Instruction InstructionDecoder::decode(uint16_t opcode, RegisterFile* regs, ALU*
 //INSTRUCTION SET
 //--------------------------------------------Arithmetic and Logic Instructions--------------------------------------------
 
+
+//TODO:Check Rd and Rr
 Instruction ADD(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
@@ -60,7 +65,7 @@ Instruction ADD(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     return inst;
 }
 
-
+//TODO:Check Rd and Rr
 Instruction ADC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
@@ -75,7 +80,7 @@ Instruction ADC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     };  
     return inst;
 }
-
+//TODO:Check Rd and Rr
 Instruction SUB(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
@@ -90,6 +95,7 @@ Instruction SUB(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     return inst;
 }
 
+//TODO:Check Rd and Rr
 Instruction SBC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
@@ -132,6 +138,7 @@ Instruction SBCI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& 
     return inst;
 }
 
+//TODO:Check Rd and Rr
 Instruction AND(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
@@ -146,6 +153,7 @@ Instruction AND(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     return inst;
 }
 
+//TODO:Check Rd and Rr
 Instruction OR(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
@@ -167,6 +175,19 @@ Instruction ANDI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& 
     inst.execute = [regs,rd,K,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t result = alu->and(val1, K, sr);
+        regs->write(rd, result);
+        pc->increment();
+    };  
+    return inst;
+}
+
+Instruction ORI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+    Instruction inst;
+    uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
+    uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);  
+    inst.execute = [regs,rd,K,alu, &sr, pc](){
+        uint8_t val1 = regs->read(rd);
+        uint8_t result = alu->or(val1, K, sr);
         regs->write(rd, result);
         pc->increment();
     };  
