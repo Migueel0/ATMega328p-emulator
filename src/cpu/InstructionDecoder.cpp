@@ -25,6 +25,7 @@ std::array<InstructionPattern, 131> instructionTable = {{
     {0xFC00, 0x0C00, ADD},
     {0xFC00, 0x1C00, ADC},
     {0xFC00, 0x1800, SUB},
+    {0xFC00, 0x0800, SBC},
 }};
 
 Instruction InstructionDecoder::decode(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
@@ -33,7 +34,7 @@ Instruction InstructionDecoder::decode(uint16_t opcode, RegisterFile* regs, ALU*
             return entry.decoder(opcode, regs, alu, sr, pc);
         }
     }
-    throw std::runtime_error("Opcode no soportado");
+    throw std::runtime_error("Opcode not supported");
 }
 
 //INSTRUCTION SET
@@ -92,6 +93,20 @@ Instruction SBC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
         uint8_t val2 = regs->read(rr);
         bool carry = sr.getFlag(FLAG_C);
         uint8_t result = alu->sub(val1, val2, carry, sr);
+        regs->write(rd, result);
+        pc->increment();
+    };  
+    return inst;
+}
+
+Instruction SBCI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+    Instruction inst;
+    uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
+    uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);  
+    inst.execute = [regs,rd,K,alu, &sr, pc](){
+        uint8_t val1 = regs->read(rd);
+        bool carry = sr.getFlag(FLAG_C);
+        uint8_t result = alu->sub(val1, K, carry, sr);
         regs->write(rd, result);
         pc->increment();
     };  
