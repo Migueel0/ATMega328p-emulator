@@ -34,6 +34,8 @@ std::array<InstructionPattern, 131> instructionTable = {{
     {0xFC00, 0x2200, OR},
     {0xF000, 0x7000, ANDI},
     {0xF000, 0x6000, ORI},
+    {0xFC00, 0x2400, EOR},
+    {0xFF00, 0x9600, ADIW},
 
 }};
 
@@ -201,6 +203,29 @@ Instruction EOR(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
         uint8_t val2 = regs->read(rr);
         uint8_t result = alu->xor(val1, val2, sr);
         regs->write(rd, result);
+        pc->increment();
+    };  
+    return inst;
+}
+
+Instruction ADIW(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+    Instruction inst;
+
+
+    uint8_t rd = inst.operands[0] + ((opcode >> 4) & 0x03);
+    uint8_t K = inst.operands[1] = ((opcode & 0xC0) >> 4) | (opcode & 0x0F);
+
+    inst.execute = [regs,rd,K,alu, &sr, pc](){
+        //1st cycle
+        uint8_t rdLow = regs->read(rd);
+        uint8_t resultLow = alu->add(rdLow, K, false, sr);
+        regs->write(rd, resultLow);
+
+        //2nd cycle
+        uint8_t rdHigh = regs->read(rd + 1);
+        uint8_t resultHigh = alu->add(rdHigh, 0, sr.getFlag(FLAG_C), sr);
+        regs->write(rd + 1, resultHigh);
+
         pc->increment();
     };  
     return inst;
