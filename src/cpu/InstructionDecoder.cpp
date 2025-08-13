@@ -82,3 +82,18 @@ Instruction SUB(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     };  
     return inst;
 }
+
+Instruction SBC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+    Instruction inst;
+    uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
+    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F); 
+    inst.execute = [regs,rd,rr,alu, &sr, pc](){
+        uint8_t val1 = regs->read(rd);
+        uint8_t val2 = regs->read(rr);
+        bool carry = sr.getFlag(FLAG_C);
+        uint8_t result = alu->sub(val1, val2, carry, sr);
+        regs->write(rd, result);
+        pc->increment();
+    };  
+    return inst;
+}
