@@ -23,7 +23,8 @@ struct InstructionPattern {
 
 std::array<InstructionPattern, 131> instructionTable = {{
     {0xFC00, 0x0C00, ADD},
-    {0xFC00, 0x1C00, ADC}  
+    {0xFC00, 0x1C00, ADC},
+    {0xFC00, 0x1800, SUB},
 }};
 
 Instruction InstructionDecoder::decode(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
@@ -62,6 +63,20 @@ Instruction ADC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
         uint8_t val2 = regs->read(rr);
         bool carry = sr.getFlag(FLAG_C);
         uint8_t result = alu->add(val1, val2, carry, sr);
+        regs->write(rd, result);
+        pc->increment();
+    };  
+    return inst;
+}
+
+Instruction SUB(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+    Instruction inst;
+    uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
+    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F); 
+    inst.execute = [regs,rd,rr,alu, &sr, pc](){
+        uint8_t val1 = regs->read(rd);
+        uint8_t val2 = regs->read(rr);
+        uint8_t result = alu->sub(val1, val2, false, sr);
         regs->write(rd, result);
         pc->increment();
     };  
