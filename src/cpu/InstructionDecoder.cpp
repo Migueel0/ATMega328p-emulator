@@ -26,6 +26,8 @@ std::array<InstructionPattern, 131> instructionTable = {{
     {0xFC00, 0x1C00, ADC},
     {0xFC00, 0x1800, SUB},
     {0xFC00, 0x0800, SBC},
+    {0xF000, 0x5000, SUBI},
+    {0xF000, 0x4000, SBCI},
 }};
 
 Instruction InstructionDecoder::decode(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
@@ -93,6 +95,19 @@ Instruction SBC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
         uint8_t val2 = regs->read(rr);
         bool carry = sr.getFlag(FLAG_C);
         uint8_t result = alu->sub(val1, val2, carry, sr);
+        regs->write(rd, result);
+        pc->increment();
+    };  
+    return inst;
+}
+
+Instruction SUBI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+    Instruction inst;
+    uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
+    uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);  
+    inst.execute = [regs,rd,K,alu, &sr, pc](){
+        uint8_t val1 = regs->read(rd);
+        uint8_t result = alu->sub(val1, K, false, sr);
         regs->write(rd, result);
         pc->increment();
     };  
