@@ -4,5 +4,5 @@
 
 class InstructionDecoder {
 public:
-    Instruction decode(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc);
+    Instruction decode(uint16_t opcode, CPU cpu);
 };

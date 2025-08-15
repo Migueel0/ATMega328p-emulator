@@ -4,6 +4,7 @@
 #include "StatusRegister.hpp"
 #include "RegistersFile.hpp"
 #include <stdexcept>
+#include "cpu.hpp"
 
 constexpr uint8_t FLAG_I = 0x80;
 constexpr uint8_t FLAG_T = 0x40;
@@ -18,7 +19,7 @@ constexpr uint8_t FLAG_C = 0x01;
 struct InstructionPattern { 
     uint16_t mask;
     uint16_t pattern;
-    std::function<Instruction(uint16_t, RegisterFile*, ALU*, StatusRegister&,ProgramCounter*)> decoder;
+    std::function<Instruction(uint16_t,CPU)> decoder;
 };
 
 
@@ -39,10 +40,10 @@ std::array<InstructionPattern, 131> instructionTable = {{
 
 }};
 
-Instruction InstructionDecoder::decode(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction InstructionDecoder::decode(uint16_t opcode,CPU cpu) {
     for (const auto& entry : instructionTable) {
         if ((opcode & entry.mask) == entry.pattern) {
-            return entry.decoder(opcode, regs, alu, sr, pc);
+            return entry.decoder(opcode,cpu);
         }
     }
     throw std::runtime_error("Opcode not supported");
@@ -52,10 +53,17 @@ Instruction InstructionDecoder::decode(uint16_t opcode, RegisterFile* regs, ALU*
 //--------------------------------------------Arithmetic and Logic Instructions--------------------------------------------
 
 
-Instruction ADD(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction ADD(uint16_t opcode, CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
-    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F); 
+    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F);
+
     inst.execute = [regs,rd,rr,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t val2 = regs->read(rr);
@@ -66,10 +74,17 @@ Instruction ADD(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     return inst;
 }
 
-Instruction ADC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction ADC(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
-    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F); 
+    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F);
+
     inst.execute = [regs,rd,rr,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t val2 = regs->read(rr);
@@ -82,7 +97,13 @@ Instruction ADC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
 }
 
 
-Instruction SUB(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction SUB(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
     uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F); 
@@ -96,10 +117,17 @@ Instruction SUB(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     return inst;
 }
 
-Instruction SBC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction SBC(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
-    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F); 
+    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F);
+
     inst.execute = [regs,rd,rr,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t val2 = regs->read(rr);
@@ -111,10 +139,17 @@ Instruction SBC(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     return inst;
 }
 
-Instruction SUBI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction SUBI(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
-    uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);  
+    uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);
+
     inst.execute = [regs,rd,K,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t result = alu->sub(val1, K, false, sr);
@@ -124,10 +159,17 @@ Instruction SUBI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& 
     return inst;
 }
 
-Instruction SBCI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction SBCI(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
-    uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);  
+    uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);
+
     inst.execute = [regs,rd,K,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         bool carry = sr.getFlag(FLAG_C);
@@ -139,10 +181,17 @@ Instruction SBCI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& 
 }
 
 
-Instruction AND(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction AND(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
-    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F); 
+    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F);
+
     inst.execute = [regs,rd,rr,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t val2 = regs->read(rr);
@@ -154,10 +203,17 @@ Instruction AND(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
 }
 
 
-Instruction OR(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction OR(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
-    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F); 
+    uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F);
+
     inst.execute = [regs,rd,rr,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t val2 = regs->read(rr);
@@ -168,10 +224,17 @@ Instruction OR(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr
     return inst;
 }
 
-Instruction ANDI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction ANDI(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
     uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);  
+
     inst.execute = [regs,rd,K,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t result = alu->and(val1, K, sr);
@@ -181,10 +244,16 @@ Instruction ANDI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& 
     return inst;
 }
 
-Instruction ORI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction ORI(uint16_t opcode,CPU cpu) {
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
-    uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);  
+    uint8_t K = inst.operands[1] = ((opcode & 0x0F00) >> 4) | (opcode & 0x000F);
+
     inst.execute = [regs,rd,K,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t result = alu->or(val1, K, sr);
@@ -194,10 +263,17 @@ Instruction ORI(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     return inst;
 }
 
-Instruction EOR(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction EOR(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
     uint8_t rr = inst.operands[1] = ((opcode >> 5) & 0x10) | (opcode & 0x0F); 
+
     inst.execute = [regs,rd,rr,alu, &sr, pc](){
         uint8_t val1 = regs->read(rd);
         uint8_t val2 = regs->read(rr);
@@ -208,10 +284,14 @@ Instruction EOR(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& s
     return inst;
 }
 
-Instruction ADIW(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction ADIW(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
-
-
     uint8_t rd = inst.operands[0] + ((opcode >> 4) & 0x03);
     uint8_t K = inst.operands[1] = ((opcode & 0xC0) >> 4) | (opcode & 0x0F);
 
@@ -232,7 +312,13 @@ Instruction ADIW(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& 
 }
 
 
-Instruction SBIW(uint16_t opcode, RegisterFile* regs, ALU* alu, StatusRegister& sr, ProgramCounter* pc) {
+Instruction SBIW(uint16_t opcode,CPU cpu) {
+
+    RegisterFile* regs  = &cpu.getRegisterFile();
+    ALU* alu  = &cpu.getAlu();
+    StatusRegister& sr = cpu.getStatusRegister();
+    ProgramCounter* pc = &cpu.getProgramCounter();
+
     Instruction inst;
     uint8_t rd = inst.operands[0] + ((opcode >> 4) & 0x03);
     uint8_t K = inst.operands[1] = ((opcode & 0xC0) >> 4) | (opcode & 0x0F);
