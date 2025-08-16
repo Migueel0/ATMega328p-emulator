@@ -8,7 +8,7 @@
 static constexpr size_t WORDS = 16384;
 class Flash{
 
-    protected:
+    private:
         std::array<uint16_t,WORDS> mem;
     
     public:
