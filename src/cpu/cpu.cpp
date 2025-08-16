@@ -1,7 +1,34 @@
 #include "cpu.hpp"
 #include <iostream>
 
-CPU::CPU() {}
+CPU::CPU(Flash* flash,SRAM* sram){
+    this->flash = flash;
+    this->sram = sram;
+    reset();
+}
+
+void CPU::reset() {
+    regs.clear();
+    sr.set(0);
+    pc.reset();
+    sram->getMem().fill(0);
+}
+
+void CPU::step(CPU cpu){
+    //Fetch
+    uint16_t opcode = cpu.flash->read(pc.get());
+    //Decode
+    Instruction instruction = instrcutionDecoder.decode(opcode,cpu);
+    //Execute
+    instruction.execute();
+}
+
+void CPU::run(CPU cpu){
+    int size = cpu.flash->size();
+    while(pc.get() < size){
+        step(cpu);
+    } 
+}
 
 ALU CPU::getAlu(){
     return this->alu;
@@ -23,26 +50,6 @@ StatusRegister CPU::getStatusRegister(){
     return this->sr;
 }
 
-void CPU::reset() {
-    regs.clear();
-    sr.set(0);
-    pc.reset();
-}
-
-void CPU::step(){
-    //TODO: get opcode by program memory
-    uint16_t opcode;
-    CPU cpu = CPU();
-    Instruction instruction = instrcutionDecoder.decode(opcode,cpu);
-    instruction.execute();
-}
-
-void CPU::run(){
-    int size = 0;
-    while(pc.get() < size){//TODO: get size by program memory
-        step();
-    } 
-}
 
 int main(){
 

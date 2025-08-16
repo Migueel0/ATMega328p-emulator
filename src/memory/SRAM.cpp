@@ -4,6 +4,10 @@ SRAM::SRAM(){
     mem.fill(0);
 }
 
+std::array<uint8_t,SIZE> SRAM::getMem(){
+    return this->mem;
+}
+
 uint8_t SRAM::read(uint16_t addr) const{
     if(addr >= SIZE){
         throw std::out_of_range("Invalid address");

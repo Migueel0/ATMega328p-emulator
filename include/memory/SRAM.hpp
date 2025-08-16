@@ -19,4 +19,5 @@ class SRAM{
         uint8_t readSRAM(uint16_t addr) const;
         RegisterFile& getRegs();
         StatusRegister& getStatusRegister();
+        std::array<uint8_t,SIZE> getMem();
 };

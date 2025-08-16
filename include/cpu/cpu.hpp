@@ -7,6 +7,8 @@
 #include "RegistersFile.hpp"
 #include "StatusRegister.hpp"
 #include "InstructionDecoder.hpp"
+#include "Flash.hpp"
+#include "SRAM.hpp"
 
 class CPU {
 
@@ -16,14 +18,17 @@ private:
     RegisterFile regs;
     StatusRegister sr;
     ProgramCounter pc;
+
+    Flash* flash;
+    SRAM* sram;
     
 
 
 public:
-    CPU();
+    CPU(Flash* flash,SRAM* sram);
     void reset();
-    void step();
-    void run();
+    void step(CPU cpu);
+    void run(CPU cpu);
     ALU getAlu();
     InstructionDecoder getInstructionDecoder();
     RegisterFile getRegisterFile();
