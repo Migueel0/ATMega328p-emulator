@@ -37,6 +37,8 @@ std::array<InstructionPattern, 131> instructionTable = {{
     {0xF000, 0x6000, ORI},
     {0xFC00, 0x2400, EOR},
     {0xFF00, 0x9600, ADIW},
+    {0XFF00, 0x9700, SBIW}
+
 
 }};
 
