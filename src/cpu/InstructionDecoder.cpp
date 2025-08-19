@@ -294,7 +294,7 @@ Instruction ADIW(uint16_t opcode,CPU cpu) {
     ProgramCounter* pc = &cpu.getProgramCounter();
 
     Instruction inst;
-    uint8_t rd = inst.operands[0] + ((opcode >> 4) & 0x03);
+    uint8_t rd = inst.operands[0] = ((opcode >> 4) & 0x03);
     uint8_t K = inst.operands[1] = ((opcode & 0xC0) >> 4) | (opcode & 0x0F);
 
     inst.execute = [regs,rd,K,alu, &sr, pc](){
@@ -322,7 +322,7 @@ Instruction SBIW(uint16_t opcode,CPU cpu) {
     ProgramCounter* pc = &cpu.getProgramCounter();
 
     Instruction inst;
-    uint8_t rd = inst.operands[0] + ((opcode >> 4) & 0x03);
+    uint8_t rd = inst.operands[0] = ((opcode >> 4) & 0x03);
     uint8_t K = inst.operands[1] = ((opcode & 0xC0) >> 4) | (opcode & 0x0F);
 
     inst.execute = [regs,rd,K,alu, &sr, pc](){
@@ -339,4 +339,18 @@ Instruction SBIW(uint16_t opcode,CPU cpu) {
         pc->increment();
     };  
     return inst;
+}
+
+Instruction RJMP(uint16_t opcode, CPU cpu){
+    ProgramCounter* pc = &cpu.getProgramCounter();
+    uint16_t K = opcode & 0x0FFF;
+    if (K & 0x0800) {
+        K |= 0xF000;  
+    }
+    Instruction inst;
+
+    inst.execute = [pc,K](){
+        uint16_t currentPc = pc->get();
+        pc->set(currentPc + K + 1);
+    };
 }
