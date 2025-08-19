@@ -37,7 +37,9 @@ std::array<InstructionPattern, 131> instructionTable = {{
     {0xF000, 0x6000, ORI},
     {0xFC00, 0x2400, EOR},
     {0xFF00, 0x9600, ADIW},
-    {0XFF00, 0x9700, SBIW}
+    {0XFF00, 0x9700, SBIW},
+    {0xF000,0xC000,RJMP},
+    {0xFFFF, 0x9609,IJMP}
 
 
 }};
@@ -342,15 +344,31 @@ Instruction SBIW(uint16_t opcode,CPU cpu) {
 }
 
 Instruction RJMP(uint16_t opcode, CPU cpu){
+    Instruction inst;
     ProgramCounter* pc = &cpu.getProgramCounter();
-    uint16_t K = opcode & 0x0FFF;
+    uint16_t K = inst.operands[0] = opcode & 0x0FFF;
     if (K & 0x0800) {
         K |= 0xF000;  
     }
-    Instruction inst;
 
     inst.execute = [pc,K](){
         uint16_t currentPc = pc->get();
         pc->set(currentPc + K + 1);
     };
+
+    return inst;
+}
+
+Instruction IJMP(uint16_t opcode, CPU cpu){
+    ProgramCounter* pc = &cpu.getProgramCounter();
+    RegisterFile* regs = &cpu.getRegisterFile();
+
+    uint16_t Z = (regs->read(31) << 8) | regs->read(30);
+
+    Instruction inst;
+    inst.execute = [pc,Z](){
+        pc->set(Z);
+    };
+
+    return inst;
 }
