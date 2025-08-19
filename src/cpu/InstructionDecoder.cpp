@@ -38,8 +38,10 @@ std::array<InstructionPattern, 131> instructionTable = {{
     {0xFC00, 0x2400, EOR},
     {0xFF00, 0x9600, ADIW},
     {0XFF00, 0x9700, SBIW},
-    {0xF000,0xC000,RJMP},
-    {0xFFFF, 0x9609,IJMP}
+    {0xF000, 0xC000, RJMP},
+    {0xFFFF, 0x9609, IJMP},
+    {0xF000, 0xE000, LDI},
+    {0xEE00, 0x8000, LD}
 
 
 }};
@@ -55,7 +57,6 @@ Instruction InstructionDecoder::decode(uint16_t opcode,CPU cpu) {
 
 //INSTRUCTION SET
 //--------------------------------------------Arithmetic and Logic Instructions--------------------------------------------
-
 
 Instruction ADD(uint16_t opcode, CPU cpu) {
 
@@ -343,6 +344,8 @@ Instruction SBIW(uint16_t opcode,CPU cpu) {
     return inst;
 }
 
+//--------------------------------------------Branch Instructions--------------------------------------------
+
 Instruction RJMP(uint16_t opcode, CPU cpu){
     Instruction inst;
     ProgramCounter* pc = &cpu.getProgramCounter();
@@ -372,3 +375,100 @@ Instruction IJMP(uint16_t opcode, CPU cpu){
 
     return inst;
 }
+
+//--------------------------------------------Data Transfer Instructions--------------------------------------------
+
+Instruction LDI(uint16_t opcode, CPU cpu){
+    ProgramCounter* pc = &cpu.getProgramCounter();
+    RegisterFile* regs = &cpu.getRegisterFile();
+    Instruction inst;
+
+    uint8_t K = inst.operands[0] = ((opcode >> 4 )& 0xF0) | (opcode & 0x0F);
+    uint8_t rd = inst.operands[1] = 16 + (opcode & 0x00F0 >> 4);
+
+    inst.execute = [K,rd,pc,regs](){
+        regs->write(rd,K);
+        pc->increment();
+    };
+}
+
+Instruction LD(uint16_t opcode, CPU cpu){
+    ProgramCounter* pc = &cpu.getProgramCounter();
+    RegisterFile* regs = &cpu.getRegisterFile();
+    Instruction inst;
+
+    uint8_t rd;
+    uint8_t N; //N represents the value of X,Y or Z 16-bit pointers
+
+    if(opcode & 0xFE00 == 0x9000){
+        switch (opcode & 0x000F){
+
+            case 0x000C: // LD Rd,X
+                rd = inst.operands[0] = (opcode >> 4) & 0x001F;
+                uint16_t X = (regs->read(26) << 8) | regs->read(27);
+                N = inst.operands[1] =  X;
+
+                inst.execute = [regs,rd,N,pc](){
+                    regs->write(rd,N);
+                    pc->increment();
+                };
+                break;
+
+            case 0x000D: // LD Rd,X+
+                rd = inst.operands[0] = (opcode >> 4) & 0x001F;
+                uint16_t X = (regs->read(26) << 8) | regs->read(27);
+                N = inst.operands[1] =  X;
+
+                inst.execute = [regs,rd,N,pc](){
+                    //1st cycle
+                    regs->write(rd,N);
+
+                    //2nd cycle
+                    uint16_t postInc = N + 1;
+                    regs->write(26,postInc & 0xFF);
+                    regs->write(27,(postInc >> 8) & 0xFF);
+
+                    pc->increment();
+                };
+                break;
+
+            case 0x000E: // LD Rd,-X
+
+                rd = inst.operands[0] = (opcode >> 4) & 0x001F;
+                uint16_t X = (regs->read(26) << 8) | regs->read(27);
+                N = inst.operands[1] =  X;
+
+                inst.execute = [regs,rd,N,pc](){
+                    
+                    //1st cycle
+                    uint16_t preDec = N + 1;
+                    regs->write(26,preDec & 0xFF);
+                    regs->write(27,(preDec >> 8) & 0xFF);
+                    uint16_t data = (regs->read(26) << 8) | regs->read(27);
+
+                    //2nd cycle
+                    regs->write(rd,N);
+
+                    pc->increment();
+                };
+                break;
+            case 0x0009: // LD Rd,Y+
+                break;
+            case 0x000A: // LD Rd,-Y
+                break;
+            case 0x0001: // LD Rd,Z+
+                break;
+            case 0x0002: // LD Rd,-Z
+                break;
+        }
+    }else if(opcode & 0xFE00 == 0x8000){
+        switch (opcode & 0x000F){
+            case 0x0008: // LD Rd,Y
+                break;
+            case 0x0000: // LD Rd,Z
+                break;
+        }
+    }
+}
+
+
