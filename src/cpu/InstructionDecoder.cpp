@@ -404,71 +404,88 @@ Instruction LD(uint16_t opcode, CPU cpu){
         switch (opcode & 0x000F){
 
             case 0x000C: // LD Rd,X
-                rd = inst.operands[0] = (opcode >> 4) & 0x001F;
-                uint16_t X = (regs->read(26) << 8) | regs->read(27);
-                N = inst.operands[1] =  X;
-
-                inst.execute = [regs,rd,N,pc](){
-                    regs->write(rd,N);
-                    pc->increment();
-                };
+                LD_N(26,27,rd,inst,opcode,regs,pc,N);
                 break;
-
             case 0x000D: // LD Rd,X+
-                rd = inst.operands[0] = (opcode >> 4) & 0x001F;
-                uint16_t X = (regs->read(26) << 8) | regs->read(27);
-                N = inst.operands[1] =  X;
-
-                inst.execute = [regs,rd,N,pc](){
-                    //1st cycle
-                    regs->write(rd,N);
-
-                    //2nd cycle
-                    uint16_t postInc = N + 1;
-                    regs->write(26,postInc & 0xFF);
-                    regs->write(27,(postInc >> 8) & 0xFF);
-
-                    pc->increment();
-                };
+                LD_NPostInc(26,27,rd,inst,opcode,regs,pc,N);
                 break;
-
             case 0x000E: // LD Rd,-X
-
-                rd = inst.operands[0] = (opcode >> 4) & 0x001F;
-                uint16_t X = (regs->read(26) << 8) | regs->read(27);
-                N = inst.operands[1] =  X;
-
-                inst.execute = [regs,rd,N,pc](){
-                    
-                    //1st cycle
-                    uint16_t preDec = N + 1;
-                    regs->write(26,preDec & 0xFF);
-                    regs->write(27,(preDec >> 8) & 0xFF);
-                    uint16_t data = (regs->read(26) << 8) | regs->read(27);
-
-                    //2nd cycle
-                    regs->write(rd,N);
-
-                    pc->increment();
-                };
+                LD_NPreDec(26,27,rd,inst,opcode,regs,pc,N);
                 break;
             case 0x0009: // LD Rd,Y+
+                LD_NPostInc(28,29,rd,inst,opcode,regs,pc,N);
                 break;
             case 0x000A: // LD Rd,-Y
+                LD_NPreDec(28,29,rd,inst,opcode,regs,pc,N);
                 break;
             case 0x0001: // LD Rd,Z+
+                LD_NPostInc(30,31,rd,inst,opcode,regs,pc,N);
                 break;
             case 0x0002: // LD Rd,-Z
+                LD_NPreDec(30,31,rd,inst,opcode,regs,pc,N);
                 break;
         }
     }else if(opcode & 0xFE00 == 0x8000){
         switch (opcode & 0x000F){
             case 0x0008: // LD Rd,Y
+                LD_N(28,29,rd,inst,opcode,regs,pc,N);
                 break;
             case 0x0000: // LD Rd,Z
+                LD_N(30,31,rd,inst,opcode,regs,pc,N);
                 break;
         }
     }
 }
 
+
+void LD_N(int lowByte, int highByte,uint16_t rd, Instruction inst,uint16_t opcode,RegisterFile* regs,ProgramCounter* pc,uint16_t N){
+    rd = inst.operands[0] = (opcode >> 4) & 0x001F;
+    uint16_t X = (regs->read(highByte) << 8) | regs->read(lowByte);
+    N = inst.operands[1] =  X;
+
+    inst.execute = [regs,rd,N,pc](){
+        regs->write(rd,N);
+        pc->increment();
+    };
+}
+
+void LD_NPostInc(int lowByte, int highByte, uint16_t rd, Instruction inst,uint16_t opcode,RegisterFile* regs,ProgramCounter* pc,uint16_t N){
+    rd = inst.operands[0] = (opcode >> 4) & 0x001F;
+    uint16_t pointer = (regs->read(highByte) << 8) | regs->read(lowByte);
+    N = inst.operands[1] =  pointer;
+
+    inst.execute = [regs,rd,N,pc](){
+        //1st cycle
+        regs->write(rd,N);
+
+        //2nd cycle
+        uint16_t postInc = N + 1;
+        regs->write(26,postInc & 0xFF);
+        regs->write(27,(postInc >> 8) & 0xFF);
+
+        pc->increment();
+    };
+
+}
+
+void LD_NPreDec(int lowByte, int highByte, uint16_t rd, Instruction inst,uint16_t opcode,RegisterFile* regs,ProgramCounter* pc,uint16_t N){
+    rd = inst.operands[0] = (opcode >> 4) & 0x001F;
+    uint16_t pointer = (regs->read(26) << 8) | regs->read(27);
+    N = inst.operands[1] =  pointer;
+
+    inst.execute = [regs,rd,N,pc](){
+        
+        //1st cycle
+        uint16_t preDec = N - 1;
+        regs->write(26,preDec & 0xFF);
+        regs->write(27,(preDec >> 8) & 0xFF);
+        uint16_t data = (regs->read(26) << 8) | regs->read(27);
+
+        //2nd cycle
+        regs->write(rd,N);
+
+        pc->increment();
+    };
+
+}
 
