@@ -41,7 +41,8 @@ std::array<InstructionPattern, 131> instructionTable = {{
     {0xF000, 0xC000, RJMP},
     {0xFFFF, 0x9609, IJMP},
     {0xF000, 0xE000, LDI},
-    {0xEE00, 0x8000, LD}
+    {0xEE00, 0x8000, LD},
+    {0xFC00, 0x2C00, MOV}
 
 
 }};
@@ -377,6 +378,25 @@ Instruction IJMP(uint16_t opcode, CPU cpu){
 }
 
 //--------------------------------------------Data Transfer Instructions--------------------------------------------
+
+Instruction MOV(uint16_t opcode, CPU cpu){
+
+    ProgramCounter* pc = &cpu.getProgramCounter();
+    RegisterFile* regs = &cpu.getRegisterFile();
+
+    Instruction inst;
+    uint8_t rd = inst.operands[0] = (opcode >> 4) & 0x1F;
+    uint8_t rr = inst.operands[1] = (opcode & 0x0F) | ((opcode >> 5) & 0x10);  
+
+
+    inst.execute = [rd,rr,pc,regs](){
+        uint8_t val = regs->read(rr);
+        regs->write(rd,val);
+        pc->increment();
+    };
+
+    return inst;
+}
 
 Instruction LDI(uint16_t opcode, CPU cpu){
     ProgramCounter* pc = &cpu.getProgramCounter();
